@@ -1,7 +1,26 @@
 "use strict";
 
+function _typeof(obj) {
+  "@babel/helpers - typeof";
+  if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") {
+    _typeof = function _typeof(obj) {
+      return typeof obj;
+    };
+  } else {
+    _typeof = function _typeof(obj) {
+      return obj &&
+        typeof Symbol === "function" &&
+        obj.constructor === Symbol &&
+        obj !== Symbol.prototype
+        ? "symbol"
+        : typeof obj;
+    };
+  }
+  return _typeof(obj);
+}
+
 Object.defineProperty(exports, "__esModule", {
-  value: true
+  value: true,
 });
 exports.default = void 0;
 
@@ -9,12 +28,55 @@ var _try = _interopRequireWildcard(require("./try"));
 
 var _util = require("./util");
 
-function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) { var desc = Object.defineProperty && Object.getOwnPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : {}; if (desc.get || desc.set) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } } newObj.default = obj; return newObj; } }
+function _getRequireWildcardCache() {
+  if (typeof WeakMap !== "function") return null;
+  var cache = new WeakMap();
+  _getRequireWildcardCache = function _getRequireWildcardCache() {
+    return cache;
+  };
+  return cache;
+}
+
+function _interopRequireWildcard(obj) {
+  if (obj && obj.__esModule) {
+    return obj;
+  }
+  if (
+    obj === null ||
+    (_typeof(obj) !== "object" && typeof obj !== "function")
+  ) {
+    return { default: obj };
+  }
+  var cache = _getRequireWildcardCache();
+  if (cache && cache.has(obj)) {
+    return cache.get(obj);
+  }
+  var newObj = {};
+  var hasPropertyDescriptor =
+    Object.defineProperty && Object.getOwnPropertyDescriptor;
+  for (var key in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      var desc = hasPropertyDescriptor
+        ? Object.getOwnPropertyDescriptor(obj, key)
+        : null;
+      if (desc && (desc.get || desc.set)) {
+        Object.defineProperty(newObj, key, desc);
+      } else {
+        newObj[key] = obj[key];
+      }
+    }
+  }
+  newObj.default = obj;
+  if (cache) {
+    cache.set(obj, newObj);
+  }
+  return newObj;
+}
 
 var monitor = {};
 monitor.tryJS = _try.default;
 (0, _try.setting)({
-  handleTryCatchError: handleTryCatchError
+  handleTryCatchError: handleTryCatchError,
 });
 
 monitor.init = function (opts) {
@@ -22,7 +84,6 @@ monitor.init = function (opts) {
 
   __init();
 }; // 忽略错误监听
-
 
 window.ignoreError = false; // 错误日志列表
 
@@ -36,10 +97,9 @@ var config = {
   // 错误处理间隔时间
   maxError: 16,
   // 异常报错数量限制
-  sampling: 1 // 采样率
-  // 定义的错误类型码
+  sampling: 1, // 采样率
+}; // 定义的错误类型码
 
-};
 var ERROR_RUNTIME = 1;
 var ERROR_SCRIPT = 2;
 var ERROR_STYLE = 3;
@@ -53,7 +113,7 @@ var LOAD_ERROR_TYPE = {
   LINK: ERROR_STYLE,
   IMG: ERROR_IMAGE,
   AUDIO: ERROR_AUDIO,
-  VIDEO: ERROR_VIDEO
+  VIDEO: ERROR_VIDEO,
 };
 
 function __config(opts) {
@@ -73,41 +133,59 @@ function __init() {
   //   handleError(formatRuntimerError.apply(null, arguments))
   // }
   // 监听资源加载错误(JavaScript Scource failed to load)
-  window.addEventListener('error', function (event) {
-    // 过滤 target 为 window 的异常，避免与上面的 onerror 重复
-    var errorTarget = event.target;
+  window.addEventListener(
+    "error",
+    function (event) {
+      // 过滤 target 为 window 的异常，避免与上面的 onerror 重复
+      var errorTarget = event.target;
 
-    if (errorTarget !== window && errorTarget.nodeName && LOAD_ERROR_TYPE[errorTarget.nodeName.toUpperCase()]) {
-      handleError(formatLoadError(errorTarget));
-    } else {
-      // onerror会被覆盖, 因此转为使用Listener进行监控
-      var message = event.message,
+      if (
+        errorTarget !== window &&
+        errorTarget.nodeName &&
+        LOAD_ERROR_TYPE[errorTarget.nodeName.toUpperCase()]
+      ) {
+        handleError(formatLoadError(errorTarget));
+      } else {
+        // onerror会被覆盖, 因此转为使用Listener进行监控
+        var message = event.message,
           filename = event.filename,
           lineno = event.lineno,
           colno = event.colno,
           error = event.error;
-      handleError(formatRuntimerError(message, filename, lineno, colno, error));
-    }
-  }, true); //监听开发中浏览器中捕获到未处理的Promise错误
-
-  window.addEventListener('unhandledrejection', function (event) {
-    console.log('Unhandled Rejection at:', event.promise, 'reason:', event.reason);
-    handleError(event);
-  }, true); // 针对 vue 报错重写 console.error
+        handleError(
+          formatRuntimerError(message, filename, lineno, colno, error)
+        );
+      }
+    },
+    true
+  );
+  //监听开发中浏览器中捕获到未处理的Promise错误
+  window.addEventListener(
+    "unhandledrejection",
+    function (event) {
+      console.log(
+        "Unhandled Rejection at:",
+        event.promise,
+        "reason:",
+        event.reason
+      );
+      handleError(event);
+    },
+    true
+  ); // 针对 vue 报错重写 console.error
   // TODO
 
-  console.error = function (origin) {
+  console.error = (function (origin) {
     return function (info) {
       var errorLog = {
         type: ERROR_CONSOLE,
-        desc: info
+        desc: info,
       };
       handleError(errorLog);
       origin.call(console, info);
     };
-  }(console.error);
+  })(console.error);
 } // 处理 try..catch 错误
-
 
 function handleTryCatchError(error) {
   handleError(formatTryCatchError(error));
@@ -123,13 +201,11 @@ function handleTryCatchError(error) {
  * @return {Object}
  */
 
-
 function formatRuntimerError(message, source, lineno, colno, error) {
   return {
     type: ERROR_RUNTIME,
-    desc: message + ' at ' + source + ':' + lineno + ':' + colno,
-    stack: error && error.stack ? error.stack : 'no stack' // IE <9, has no error stack
-
+    desc: message + " at " + source + ":" + lineno + ":" + colno,
+    stack: error && error.stack ? error.stack : "no stack", // IE <9, has no error stack
   };
 }
 /**
@@ -139,12 +215,11 @@ function formatRuntimerError(message, source, lineno, colno, error) {
  * @return {Object}
  */
 
-
 function formatLoadError(errorTarget) {
   return {
     type: LOAD_ERROR_TYPE[errorTarget.nodeName.toUpperCase()],
-    desc: errorTarget.baseURI + '@' + (errorTarget.src || errorTarget.href),
-    stack: 'no stack'
+    desc: errorTarget.baseURI + "@" + (errorTarget.src || errorTarget.href),
+    stack: "no stack",
   };
 }
 /**
@@ -154,12 +229,11 @@ function formatLoadError(errorTarget) {
  * @return {Object} 格式化后的对象
  */
 
-
 function formatTryCatchError(error) {
   return {
     type: ERROR_TRY_CATHC,
     desc: error.message,
-    stack: error.stack
+    stack: error.stack,
   };
 }
 /**
@@ -167,7 +241,6 @@ function formatTryCatchError(error) {
  *
  * @param  {Object} errorLog    错误日志
  */
-
 
 function handleError(errorLog) {
   // 是否延时处理
@@ -184,7 +257,6 @@ function handleError(errorLog) {
  * @param  {Object} errorLog 错误日志
  */
 
-
 function pushError(errorLog) {
   if (needReport(config.sampling) && errorList.length < config.maxError) {
     errorList.push(errorLog);
@@ -196,7 +268,6 @@ function pushError(errorLog) {
  * @param  {Number} sampling 0 - 1
  * @return {Boolean}
  */
-
 
 function needReport(sampling) {
   return Math.random() < (sampling || 1);
