@@ -5,6 +5,7 @@ import env from "~/src/configs/env";
 const development = {
   host: "47.94.17.183",
   port: "6379",
+  password: "123456",
 };
 // 测试环境配置
 const testing = development;
