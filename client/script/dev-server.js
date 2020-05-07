@@ -19,7 +19,6 @@ const port = process.env.PORT || config.dev.port
 
 const app = express()
 const compiler = webpack(webpackConfig)
-return
 const devMiddleware = require('webpack-dev-middleware')(compiler, {
   publicPath: webpackConfig.output.publicPath,
   quiet: false,
